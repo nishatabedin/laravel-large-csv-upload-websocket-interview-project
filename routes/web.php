@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestWsEventController;
+use App\Http\Controllers\Product\ProductImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,9 +28,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    //product routes
+    Route::post('products-import', [ProductImportController::class, 'store'])->name('products.import');
 });
 
-
+//Test websocket event route
 Route::get('/test' ,[TestWsEventController::class , 'testingWsEvents']);
 
 require __DIR__.'/auth.php';
