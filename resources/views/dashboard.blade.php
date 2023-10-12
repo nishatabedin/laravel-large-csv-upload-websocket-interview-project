@@ -45,4 +45,165 @@
             </div>
         </div>
     </div>
+
+    <div id="table-container" class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Created At</th>
+                    <th>Upload Status</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Rows will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+
 </x-app-layout>
+
+
+
+
+
+<!-- <script type="module">
+    const tableBody = document.getElementById('table-body');
+    const dataMap = new Map();
+
+    // Initial data retrieval
+    fetch('/get-upload-history') // Replace with the actual route
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(entry => {
+                appendRow(entry.filename, entry.created_at, entry.upload_status);
+                dataMap.set(entry.id, entry);
+            });
+        })
+        .catch(error => console.error(error));
+
+    // Listen for a WebSocket event on the "public-upload-history" channel
+    Echo.channel('public-upload-history')
+        .listen('.UploadHistoryEvent', (data) => {
+            updateView(data.upload_history);
+        });
+
+    function updateView(data) {
+        const id = data.id;
+        const filename = data.filename;
+        const created_at = data.created_at;
+        const upload_status = data.upload_status;
+
+        if (!dataMap.has(id)) {
+            appendRow(filename, created_at, upload_status);
+            dataMap.set(id, { filename, created_at, upload_status });
+        } else {
+            updateRow(id, filename, upload_status);
+            dataMap.set(id, { filename, created_at, upload_status });
+        }
+    }
+
+    function appendRow(filename, created_at, upload_status) {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>${filename}</td>
+            <td>${created_at}</td>
+            <td>${upload_status}</td>
+        `;
+        tableBody.appendChild(newRow);
+    }
+
+    function updateRow(id, filename, upload_status) {
+        const rows = tableBody.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            if (cells.length === 3 && cells[0].textContent === filename) {
+                // Update the row if the filename matches
+                cells[2].textContent = upload_status;
+                break;
+            }
+        }
+    }
+</script> -->
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="module">
+    const tableBody = document.getElementById('table-body');
+    const dataMap = new Map();
+
+    // Initial data retrieval
+    fetch('/get-upload-history') // Replace with the actual route
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(entry => {
+                appendRow(entry.filename, entry.created_at, entry.upload_status);
+                dataMap.set(entry.id, entry);
+            });
+        })
+        .catch(error => console.error(error));
+
+    // Listen for a WebSocket event on the "public-upload-history" channel
+    Echo.channel('public-upload-history')
+        .listen('.UploadHistoryEvent', (data) => {
+            updateView(data.upload_history);
+        });
+
+    function updateView(data) {
+        const id = data.id;
+        const filename = data.filename;
+        const created_at = data.created_at;
+        const upload_status = data.upload_status;
+
+        if (!dataMap.has(id)) {
+            appendRowToTop(filename, created_at, upload_status);
+            dataMap.set(id, { filename, created_at, upload_status });
+        } else {
+            updateRow(id, filename, upload_status);
+            dataMap.set(id, { filename, created_at, upload_status });
+        }
+    }
+
+    function appendRowToTop(filename, created_at, upload_status) {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>${filename}</td>
+            <td>${created_at}</td>
+            <td>${upload_status}</td>
+        `;
+        // Insert the new row at the top of the table (before the first child)
+        tableBody.insertBefore(newRow, tableBody.firstChild);
+    }
+
+    function appendRow(filename, created_at, upload_status) {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>${filename}</td>
+            <td>${created_at}</td>
+            <td>${upload_status}</td>
+        `;
+        tableBody.appendChild(newRow);
+    }
+
+    function updateRow(id, filename, upload_status) {
+        const rows = tableBody.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            if (cells.length === 3 && cells[0].textContent === filename) {
+                // Update the row if the filename matches
+                cells[2].textContent = upload_status;
+                break;
+            }
+        }
+    }
+</script>

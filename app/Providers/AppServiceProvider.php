@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Product\UploadHistory;
 use Illuminate\Support\ServiceProvider;
+use App\Observers\UploadHistoryObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        
+        UploadHistory::observe(UploadHistoryObserver::class);
+        
     }
 }

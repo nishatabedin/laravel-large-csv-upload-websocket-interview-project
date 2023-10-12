@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Product;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -10,35 +10,41 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class TestingWsEvent implements ShouldBroadcast
+class CsvUploadHistoryEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public $upload_history;
 
-    public $test_message;
-  
-    public function __construct($test_message) {
-      $this->test_message = $test_message;
+    public function __construct($upload_history)
+    {
+        $this->upload_history = $upload_history;
     }
 
-   
+
     public function broadcastAs() {
-        return 'TestEvent';
+        return 'UploadHistoryEvent';
     }
-    
+
 
     public function broadcastOn(): array
     {
         return [
-            new Channel('public-test-channel'),
+            new Channel('public-upload-history'),  //need to change later as private channel
         ];
     }
 
 
-     public function broadcastWith()
+    public function broadcastWith()
     {
         return [
-            'test_message' => $this->test_message,
+            'upload_history' => $this->upload_history,
         ];
     }
+
+
 }
+
+
+
+

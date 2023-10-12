@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
     
     //product routes
     Route::post('products-import', [ProductImportController::class, 'store'])->name('products.import');
+    Route::get('get-upload-history', [ProductImportController::class, 'upload_history'])->name('upload.history');
 });
 
 //Test websocket event route

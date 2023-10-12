@@ -6,6 +6,7 @@ use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use App\Models\Product\Product;
 use Illuminate\Support\Facades\DB;
+use App\Models\Product\UploadHistory;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,13 +21,14 @@ class StoreProductDataByCsv implements ShouldQueue
     public $header;
     public $batchId;
     public $fileHash;
-
+    public $uploadHistoryId;
   
-    public function __construct($data, $header, $fileHash)
+    public function __construct($data, $header, $fileHash, $uploadHistoryId)
     {
         $this->data = $data;
         $this->header = $header;
         $this->fileHash = $fileHash;
+        $this->uploadHistoryId = $uploadHistoryId;
     }
 
 
@@ -36,6 +38,7 @@ class StoreProductDataByCsv implements ShouldQueue
      */
     public function handle(): void
     {
+        $this->updateStatus($this->uploadHistoryId , 'Processing');
         $upsertData = [];
         foreach ($this->data as $product) {
             $productInput = array_combine($this->header, $product);
@@ -70,6 +73,15 @@ class StoreProductDataByCsv implements ShouldQueue
             ]);
         }, 5);
 
+
+
+
+        if ($this->batch()->progress() > 95) {
+            $this->updateStatus($this->uploadHistoryId , 'Completed');
+
+            // Notify user for the completion of the upload process  (To DO)
+        }
+
         
     }
 
@@ -79,6 +91,16 @@ class StoreProductDataByCsv implements ShouldQueue
         $this->batchId = $batchId;
         return $this;
     }
+
+
+    private function updateStatus($uploadHistoryId, $status)
+    {
+        $uploadHistory = UploadHistory::find($uploadHistoryId);
+        $uploadHistory->update(['upload_status' => $status]);
+    }
+
+
+    
 
 
 }
