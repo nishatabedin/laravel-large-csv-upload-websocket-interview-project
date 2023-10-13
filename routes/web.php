@@ -34,7 +34,4 @@ Route::middleware('auth')->group(function () {
     Route::get('get-upload-history', [ProductImportController::class, 'upload_history'])->name('upload.history');
 });
 
-//Test websocket event route
-Route::get('/test' ,[TestWsEventController::class , 'testingWsEvents']);
-
 require __DIR__.'/auth.php';

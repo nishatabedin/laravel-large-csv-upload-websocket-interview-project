@@ -21,7 +21,6 @@ class ProductImportController extends Controller
 
     public function store(Request $request)
     {
-        
         $csvFile = $request->file('csv');
         $uploadHistory= UploadHistory::create([
             'filename' => $csvFile->getClientOriginalName(),
@@ -43,12 +42,9 @@ class ProductImportController extends Controller
                 $header = $data[0];
                 unset($data[0]);
             }
-            //return $batch->id;
             $batch->add(new StoreProductDataByCsv($data, $header, $fileHash,  $uploadHistory->id ));
         }
 
-        
-       
         return redirect()->route('dashboard')
         ->with('success', 'CSV Import added to the queue. We will update you once done.');
 

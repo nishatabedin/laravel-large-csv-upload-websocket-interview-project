@@ -12,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use App\Notifications\Csv\CsvUploadJobFinishedNotification;
 
 class StoreProductDataByCsv implements ShouldQueue
 {
@@ -59,7 +60,7 @@ class StoreProductDataByCsv implements ShouldQueue
         }
 
 
-        //handling deadlock
+        //Handling deadlock
         DB::transaction(function ()use ($upsertData){
             //Will run only one query to upsert for every chunk
             Product::upsert($upsertData, ['UNIQUE_KEY'], [ 
@@ -73,13 +74,11 @@ class StoreProductDataByCsv implements ShouldQueue
             ]);
         }, 5);
 
-
-
-
         if ($this->batch()->progress() > 95) {
             $this->updateStatus($this->uploadHistoryId , 'Completed');
-
-            // Notify user for the completion of the upload process  (To DO)
+            // Notify user for the completion of the upload process
+            $uploadedByUser = UploadHistory::find($this->uploadHistoryId)->user;
+            $uploadedByUser->notify((new CsvUploadJobFinishedNotification()));
         }
 
         
