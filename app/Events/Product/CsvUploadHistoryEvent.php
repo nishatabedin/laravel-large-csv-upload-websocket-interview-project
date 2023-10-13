@@ -30,7 +30,8 @@ class CsvUploadHistoryEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('public-upload-history'),  //need to change later as private channel
+            //new Channel('public-upload-history'),  //need to change later as private channel
+            new PrivateChannel('private-upload-history.' . $this->upload_history->user_id),
         ];
     }
 
