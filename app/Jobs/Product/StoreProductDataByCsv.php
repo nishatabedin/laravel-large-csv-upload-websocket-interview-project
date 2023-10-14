@@ -23,7 +23,7 @@ class StoreProductDataByCsv implements ShouldQueue
     public $batchId;
     public $fileHash;
     public $uploadHistoryId;
-  
+
     public function __construct($data, $header, $fileHash, $uploadHistoryId)
     {
         $this->data = $data;
@@ -32,14 +32,43 @@ class StoreProductDataByCsv implements ShouldQueue
         $this->uploadHistoryId = $uploadHistoryId;
     }
 
-
-
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
-        $this->updateStatus($this->uploadHistoryId , 'Processing');
+        $this->updateStatus('Processing');
+        $upsertData = $this->prepareUpsertData();
+
+        try {
+            // Handling deadlock
+            DB::transaction(function () use ($upsertData) {
+                Product::upsert($upsertData, ['UNIQUE_KEY'], [
+                    'PRODUCT_TITLE',
+                    'PRODUCT_DESCRIPTION',
+                    'STYLE#',
+                    'SANMAR_MAINFRAME_COLOR',
+                    'SIZE',
+                    'COLOR_NAME',
+                    'PIECE_PRICE',
+                ]);
+            }, 5);
+        } catch (\Throwable $th) {
+            $this->updateStatus('Canceled');
+        }
+
+        if ($this->batch()->progress() > 95) {
+            $this->updateStatus('Completed');
+            // Notify user for the completion of the upload process
+            $this->notifyUser();
+        }
+    }
+
+    public function withBatchId($batchId)
+    {
+        $this->batchId = $batchId;
+        return $this;
+    }
+
+    private function prepareUpsertData()
+    {
         $upsertData = [];
         foreach ($this->data as $product) {
             $productInput = array_combine($this->header, $product);
@@ -54,52 +83,22 @@ class StoreProductDataByCsv implements ShouldQueue
                 'COLOR_NAME',
                 'PIECE_PRICE',
             ]));
-    
+
             // Append the filtered data to the upsertData array
             $upsertData[] = $filteredData;
         }
-
-
-        //Handling deadlock
-        DB::transaction(function ()use ($upsertData){
-            //Will run only one query to upsert for every chunk
-            Product::upsert($upsertData, ['UNIQUE_KEY'], [ 
-                'PRODUCT_TITLE',
-                'PRODUCT_DESCRIPTION',
-                'STYLE#',
-                'SANMAR_MAINFRAME_COLOR',
-                'SIZE',
-                'COLOR_NAME',
-                'PIECE_PRICE',
-            ]);
-        }, 5);
-
-        if ($this->batch()->progress() > 95) {
-            $this->updateStatus($this->uploadHistoryId , 'Completed');
-            // Notify user for the completion of the upload process
-            $uploadedByUser = UploadHistory::find($this->uploadHistoryId)->user;
-            $uploadedByUser->notify((new CsvUploadJobFinishedNotification()));
-        }
-
-        
+        return $upsertData;
     }
 
-
-    public function withBatchId($batchId)
+    private function updateStatus($status)
     {
-        $this->batchId = $batchId;
-        return $this;
-    }
-
-
-    private function updateStatus($uploadHistoryId, $status)
-    {
-        $uploadHistory = UploadHistory::find($uploadHistoryId);
+        $uploadHistory = UploadHistory::find($this->uploadHistoryId);
         $uploadHistory->update(['upload_status' => $status]);
     }
 
-
-    
-
-
+    private function notifyUser()
+    {
+        $uploadedByUser = UploadHistory::find($this->uploadHistoryId)->user;
+        $uploadedByUser->notify(new CsvUploadJobFinishedNotification());
+    }
 }

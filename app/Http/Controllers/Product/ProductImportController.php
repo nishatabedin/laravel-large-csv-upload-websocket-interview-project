@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product\UploadHistory;
 use App\Jobs\Product\StoreProductDataByCsv;
 use App\Events\Product\CsvUploadHistoryEvent;
+use App\Http\Requests\Product\UploadCsvRequest;
 
 class ProductImportController extends Controller
 {
@@ -19,34 +20,32 @@ class ProductImportController extends Controller
 
     
 
-    public function store(Request $request)
+    public function store(UploadCsvRequest $request)
     {
-        $csvFile = $request->file('csv');
+
+        $fileHash = $request->fileHash; 
+        $header = $request->header; 
+        $validRows = $request->validRows; 
+
         $uploadHistory= UploadHistory::create([
-            'filename' => $csvFile->getClientOriginalName(),
+            'filename' => $request->getClientOriginalName(),
+            'filename' => 'test',
             'uploaded_at' => now(),
             'upload_status' => 'Pending',
             'user_id' => auth()->user()->id,
         ]);
 
-        $fileContents = file_get_contents($csvFile->getRealPath());
-        $fileHash = md5($fileContents);
-        // Split the file contents into chunks
-        $lines = explode("\n", $fileContents);
-        $chunks = array_chunk($lines, 1000);
-        $header = [];
+        $chunks = array_chunk($validRows, 500);
         $batch  = Bus::batch([])->dispatch();
         foreach ($chunks as $key => $chunk) {
-            $data = array_map('str_getcsv', $chunk);
-            if ($key == 0) {
-                $header = $data[0];
-                unset($data[0]);
-            }
-            $batch->add(new StoreProductDataByCsv($data, $header, $fileHash,  $uploadHistory->id ));
+            $batch->add(new StoreProductDataByCsv($chunk, $header, $fileHash,  $uploadHistory->id ));
         }
 
         return redirect()->route('dashboard')
         ->with('success', 'CSV Import added to the queue. We will update you once done.');
 
     }
+
+
+
 }
