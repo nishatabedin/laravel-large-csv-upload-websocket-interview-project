@@ -29,9 +29,6 @@
                             <label class="block text-gray-700">
                                 <input type="file" name="csv" class="block w-full text-sm text-gray-500 p-2 rounded-full border-0 text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100" multiple />
                             </label>
-                            @error('csv')
-                            <div class="text-sm text-red-600">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <!-- Add "justify-end" class to align the button to the right -->

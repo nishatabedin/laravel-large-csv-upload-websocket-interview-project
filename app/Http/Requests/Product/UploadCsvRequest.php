@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Product;
 
 use App\Services\CsvProcessorService;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UploadCsvRequest extends FormRequest
@@ -19,23 +20,31 @@ class UploadCsvRequest extends FormRequest
     }
 
 
+
     public function rules()
     {
         return [
-            'csv' => 'required|file|mimes:csv,txt', // Validation rules for the file upload
+            'csv' => [
+                'required',
+                File::types(['csv']),
+            ],
         ];
     }
 
+   
 
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            if (!$this->fileHasCsvExtension()) {
+                return false; 
+            }
             if (!$this->isValidCsv()) {
                 $validator->errors()->add('csv', 'Invalid CSV file. The number of columns in the CSV file does not match the header.');
             }
         });
     }
-    
+
 
     public function isValidCsv()
     {
@@ -81,6 +90,12 @@ class UploadCsvRequest extends FormRequest
     public function getClientOriginalName()
     {
         return $this->getCsvFile()->getClientOriginalName();
+    }
+
+    public function fileHasCsvExtension()
+    {
+        $csvFile = $this->file('csv');
+        return $csvFile->getClientOriginalExtension() === 'csv';
     }
 
 
