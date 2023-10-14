@@ -29,7 +29,6 @@ class ProductImportController extends Controller
 
         $uploadHistory= UploadHistory::create([
             'filename' => $request->getClientOriginalName(),
-            'filename' => 'test',
             'uploaded_at' => now(),
             'upload_status' => 'Pending',
             'user_id' => auth()->user()->id,

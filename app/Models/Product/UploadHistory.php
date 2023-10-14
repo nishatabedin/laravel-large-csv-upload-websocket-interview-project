@@ -11,7 +11,7 @@ class UploadHistory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['filename', 'uploaded_at', 'upload_status', 'user_id'];
+    protected $fillable = ['filename', 'uploaded_at', 'upload_status', 'user_id', 'file_hash'];
 
     public function user()
     {
@@ -19,8 +19,8 @@ class UploadHistory extends Model
     }
 
     public function getCreatedAtAttribute($value)
-{
-    //return Carbon::parse($value)->diffForHumans();
-    return Carbon::parse($this->attributes['created_at'])->format('F j, Y');
-}
+    {
+        //return Carbon::parse($value)->diffForHumans();
+        return Carbon::parse($this->attributes['created_at'])->format('F j, Y');
+    }
 }

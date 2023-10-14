@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('filename'); 
             $table->timestamp('uploaded_at'); 
             $table->string('upload_status'); 
+            $table->string('file_hash')->nullable(); 
             $table->foreignId('user_id');
             $table->timestamps(); 
         });

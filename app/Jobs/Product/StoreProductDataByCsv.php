@@ -30,30 +30,32 @@ class StoreProductDataByCsv implements ShouldQueue
         $this->header = $header;
         $this->fileHash = $fileHash;
         $this->uploadHistoryId = $uploadHistoryId;
+
     }
 
     public function handle(): void
     {
         $this->updateStatus('Processing');
         $upsertData = $this->prepareUpsertData();
-
-        try {
-            // Handling deadlock
-            DB::transaction(function () use ($upsertData) {
-                Product::upsert($upsertData, ['UNIQUE_KEY'], [
-                    'PRODUCT_TITLE',
-                    'PRODUCT_DESCRIPTION',
-                    'STYLE#',
-                    'SANMAR_MAINFRAME_COLOR',
-                    'SIZE',
-                    'COLOR_NAME',
-                    'PIECE_PRICE',
-                ]);
-            }, 5);
-        } catch (\Throwable $th) {
-            $this->updateStatus('Canceled');
+        $existingFile = UploadHistory::where('file_hash', $this->fileHash)->first();
+        if (!$existingFile) {
+            try {
+                // Handling deadlock
+                DB::transaction(function () use ($upsertData) {
+                    Product::upsert($upsertData, ['UNIQUE_KEY'], [
+                        'PRODUCT_TITLE',
+                        'PRODUCT_DESCRIPTION',
+                        'STYLE#',
+                        'SANMAR_MAINFRAME_COLOR',
+                        'SIZE',
+                        'COLOR_NAME',
+                        'PIECE_PRICE',
+                    ]);
+                }, 5);
+            } catch (\Throwable $th) {
+                $this->updateStatus('Failed');
+            }
         }
-
         if ($this->batch()->progress() > 95) {
             $this->updateStatus('Completed');
             // Notify user for the completion of the upload process
@@ -94,6 +96,9 @@ class StoreProductDataByCsv implements ShouldQueue
     {
         $uploadHistory = UploadHistory::find($this->uploadHistoryId);
         $uploadHistory->update(['upload_status' => $status]);
+        if ($status === 'Completed') {
+            $uploadHistory->update(['file_hash' => $this->fileHash]);
+        }
     }
 
     private function notifyUser()
@@ -101,4 +106,7 @@ class StoreProductDataByCsv implements ShouldQueue
         $uploadedByUser = UploadHistory::find($this->uploadHistoryId)->user;
         $uploadedByUser->notify(new CsvUploadJobFinishedNotification());
     }
+
+
+    
 }
