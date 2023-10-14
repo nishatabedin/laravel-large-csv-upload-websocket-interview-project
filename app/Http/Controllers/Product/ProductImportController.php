@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Product;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use App\Http\Controllers\Controller;
 use App\Models\Product\UploadHistory;
 use App\Jobs\Product\StoreProductDataByCsv;
-use App\Events\Product\CsvUploadHistoryEvent;
 use App\Http\Requests\Product\UploadCsvRequest;
+use App\Notifications\Csv\CsvUploadJobFinishedNotification;
+
 
 class ProductImportController extends Controller
 {
@@ -35,10 +35,20 @@ class ProductImportController extends Controller
         ]);
 
         $chunks = array_chunk($validRows, 500);
-        $batch  = Bus::batch([])->dispatch();
+        $batch = Bus::batch([]);
         foreach ($chunks as $key => $chunk) {
             $batch->add(new StoreProductDataByCsv($chunk, $header, $fileHash,  $uploadHistory->id ));
         }
+
+        $batch->finally(function () use ($uploadHistory, $fileHash) {
+            if ($uploadHistory->upload_status !== 'Failed') {
+                $uploadHistory->update(['upload_status' => 'Completed']);
+                $uploadHistory->update(['file_hash' => $fileHash]);
+            }
+            // Notify user for the completion of the upload process
+            $uploadedByUser = $uploadHistory->user;
+            $uploadedByUser->notify(new CsvUploadJobFinishedNotification());
+        })->dispatch();
 
         return redirect()->route('dashboard')
         ->with('success', 'CSV Import added to the queue. We will update you once done.');

@@ -36,7 +36,8 @@ class UploadCsvRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if (!$this->fileHasCsvExtension()) {
+            $csvFile =  $this->getCsvFile();
+            if (!$csvFile || !$this->fileHasCsvExtension($csvFile)) {
                 return false; 
             }
             if (!$this->isValidCsv()) {
@@ -46,13 +47,13 @@ class UploadCsvRequest extends FormRequest
     }
 
 
-    public function isValidCsv()
+    private function isValidCsv()
     {
         $csvProcessor = app(CsvProcessorService::class); // Retrieve the service from the container
 
         $fileContents = $this->getFileContents(); // Retrieve the file contents
         $this->fileHash = md5($fileContents);      // Calculate and store the file hash
-        $processedData = $csvProcessor->removeNonUTF8Characters($fileContents);
+        $processedData = $csvProcessor->removeNonUTF8Characters($fileContents); // Sanitize the file contents by removing any non-UTF-8 characters.
         $lines = explode("\n", $processedData);
         $header = str_getcsv($lines[0]);
 
@@ -92,9 +93,10 @@ class UploadCsvRequest extends FormRequest
         return $this->getCsvFile()->getClientOriginalName();
     }
 
-    public function fileHasCsvExtension()
+    
+
+    private function fileHasCsvExtension($csvFile)
     {
-        $csvFile = $this->file('csv');
         return $csvFile->getClientOriginalExtension() === 'csv';
     }
 

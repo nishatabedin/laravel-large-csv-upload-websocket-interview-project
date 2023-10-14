@@ -12,7 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use App\Notifications\Csv\CsvUploadJobFinishedNotification;
+
 
 class StoreProductDataByCsv implements ShouldQueue
 {
@@ -30,7 +30,6 @@ class StoreProductDataByCsv implements ShouldQueue
         $this->header = $header;
         $this->fileHash = $fileHash;
         $this->uploadHistoryId = $uploadHistoryId;
-
     }
 
     public function handle(): void
@@ -56,13 +55,10 @@ class StoreProductDataByCsv implements ShouldQueue
                 $this->updateStatus('Failed');
             }
         }
-        if ($this->batch()->progress() > 95) {
-            $this->updateStatus('Completed');
-            // Notify user for the completion of the upload process
-            $this->notifyUser();
-        }
     }
 
+
+   
     public function withBatchId($batchId)
     {
         $this->batchId = $batchId;
@@ -96,17 +92,6 @@ class StoreProductDataByCsv implements ShouldQueue
     {
         $uploadHistory = UploadHistory::find($this->uploadHistoryId);
         $uploadHistory->update(['upload_status' => $status]);
-        if ($status === 'Completed') {
-            $uploadHistory->update(['file_hash' => $this->fileHash]);
-        }
     }
 
-    private function notifyUser()
-    {
-        $uploadedByUser = UploadHistory::find($this->uploadHistoryId)->user;
-        $uploadedByUser->notify(new CsvUploadJobFinishedNotification());
-    }
-
-
-    
 }
